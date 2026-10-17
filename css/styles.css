@@ -4,7 +4,11 @@ body {
 	
 }
 
-#skrblz { cursor: url('../img/cursor.svg') 12 12, pointer }
+#skrblz {
+	cursor: url('../img/cursor.svg') 12 12, pointer;
+	// prevent touch devices from scrolling on touch
+	touch-action: none;
+}
 
 .toolbar {
 	height: 60px;
