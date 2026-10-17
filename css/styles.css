@@ -25,11 +25,14 @@ body {
 	;
 }
 
-@media (max-width: 768px) {
-  .toolbar {
-	width: 90%;
-	font-size: 14px;
-  }
+@media only screen 
+	and (width: 390px)
+	and (device-height: 844)
+	and (-webkit-device-pixel-ratio: 3) {
+    	.toolbar {
+			width: 90%;
+			font-size: 14px;
+  	  	}
 }
 
 #logo-container {
