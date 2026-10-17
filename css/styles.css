@@ -25,6 +25,13 @@ body {
 	;
 }
 
+@media (max-width: 768px) {
+  .toolbar {
+	width: 90%;
+	font-size: 14px;
+  }
+}
+
 #logo-container {
 	display: flex;
 	align-items: center;
