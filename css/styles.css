@@ -4,15 +4,24 @@ body {
 
 .toolbar {
 	height: 60px;
-	width: 100vw;
+	width: 600px;
+	position: sticky;
+	top: 20px;
+	margin: auto;
 	display: flex;
+	align: center;
 	align-items: center;
 	justify-content: space-between;
-	position: fixed;
 	background-color: #1D1D1F;
-	border-bottom: 1px solid #DEDEDE;
-	box-shadow: 1px #C4C4C4;
-	padding: 0 20px 0 20px;
+	border-radius: 100px;
+	padding: 0 10px 0 20px;
+	box-shadow:
+	  0 1px 1px hsl(0deg 0% 0% / 0.075),
+	  0 2px 2px hsl(0deg 0% 0% / 0.075),
+	  0 4px 4px hsl(0deg 0% 0% / 0.075),
+	  0 8px 8px hsl(0deg 0% 0% / 0.075),
+	  0 16px 16px hsl(0deg 0% 0% / 0.075)
+	;
 }
 
 #logo-container {
@@ -20,9 +29,7 @@ body {
 	align-items: center;
 }
 
-#icon {
-	margin-right: 8px;
-}
+#icon { margin-right: 8px; }
 
 #beta {
 	text-transform: uppercase;
