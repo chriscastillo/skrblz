@@ -1,10 +1,14 @@
+//	TODO: 
+//	Resize canvas when window is resized
+//	Drawing Tools
+
 const canvas = document.querySelector('#skrblz');
 const canvasContext = canvas.getContext('2d');
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-canvasContext.strokeStyle = '#000';
+canvasContext.strokeStyle = '#FFFFFF';
 canvasContext.lineJoin = 'round';
 canvasContext.lineCap = 'round';
 canvasContext.lineWidth = 20;
@@ -16,7 +20,6 @@ let lineHue = 0;
 
 function draw(e) {
 	if (!drawing) return;
-	console.log(e)
 	canvasContext.beginPath();
 	canvasContext.moveTo(finalX, finalY);
 	canvasContext.lineTo(e.offsetX, e.offsetY);
@@ -45,5 +48,3 @@ function clearCanvas() {
 	canvasContext.lineCap = 'round';
 	canvasContext.lineWidth = 20;
 }
-
-
