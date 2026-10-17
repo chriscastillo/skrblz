@@ -1,6 +1,11 @@
 body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	overflow: hidden;
+	
+}
+
+#skrblz {
+	cursor: url('../img/cursor.svg') 14 14, auto;
 }
 
 .toolbar {
@@ -49,6 +54,11 @@ body {
 	border-radius: 4px;
 	padding: 1px 4px;
 	margin-left: 8px;
+	
+	// Glow
+	/* -webkit-box-shadow:0px 0px 10px 0px color(display-p3 0.698 0.494 0.749);
+	-moz-box-shadow: 0px 0px 10px 0px color(display-p3 0.698 0.494 0.749);
+	box-shadow: 0px 0px 10px 0px color(display-p3 0.698 0.494 0.749); */
 }
 
 .button {

@@ -1,6 +1,6 @@
-//	TODO: 
-//	Resize canvas when window is resized
-//	Drawing Tools
+// TODO: 
+// Resize canvas when window is resized
+// Drawing Tools
 
 const canvas = document.querySelector('#skrblz');
 const canvasContext = canvas.getContext('2d');
