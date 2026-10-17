@@ -31,16 +31,6 @@ function draw(e) {
 	console.log("pointer down");
 }
 
-// canvas.addEventListener('mousemove', draw);
-// canvas.addEventListener('mouseup', () => drawing = false);
-// canvas.addEventListener('mouseout', () => drawing = false);
-// canvas.addEventListener('mousedown', (e) => {
-// 		drawing = true
-// 		finalX = e.offsetX;
-// 		finalY = e.offsetY;
-// 	}
-// );
-
 canvas.addEventListener('pointermove', draw);
 canvas.addEventListener('pointerup', () => drawing = false);
 canvas.addEventListener('pointerdown', (e) => {
