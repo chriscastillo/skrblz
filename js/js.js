@@ -1,4 +1,4 @@
-const canvas = document.querySelector('#skribl');
+const canvas = document.querySelector('#skrblz');
 const canvasContext = canvas.getContext('2d');
 
 canvas.width = window.innerWidth;
