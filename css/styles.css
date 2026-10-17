@@ -4,7 +4,7 @@ body {
 	
 }
 
-#skrblz { cursor: url('../img/cursor.svg') 14 14, auto; }
+#skrblz { cursor: url('../img/cursor.svg') 12 12, pointer }
 
 .toolbar {
 	height: 60px;
