@@ -1,26 +1,55 @@
+:root {
+	--ink: #1f1f1d;
+	--chrome-dark: #1D1D1F;
+	--dock-bg: #ffffff;
+	--dock-border: #e3e3e8;
+	--chip: #c9c9d1;
+	--chip-hover: #a9a9b3;
+	--divider: #dcdce1;
+	--edge: 20px;
+}
+
+html, body {
+	height: 100%;
+}
+
 body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	overflow: hidden;
-	
+	background: #fff;
+	/* stop iOS from selecting text / showing callouts while drawing */
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
 }
 
 #skrblz {
-	cursor: url('../img/cursor.svg') 12 12, pointer;
-	// prevent touch devices from scrolling on touch
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 0;
+	cursor: url('../img/cursor.svg') 14 14, crosshair;
+	/* prevent touch devices from scrolling / zooming while drawing */
 	touch-action: none;
 }
 
+/* ---------- Top bar ---------- */
+
 .toolbar {
-	height: 60px;
+	position: fixed;
+	z-index: 10;
+	top: max(var(--edge), env(safe-area-inset-top));
+	left: 0;
+	right: 0;
+	margin-inline: auto;
 	max-width: 60%;
-	position: sticky;
-	top: 20px;
-	margin: auto;
+	height: 60px;
 	display: flex;
-	align: center;
 	align-items: center;
 	justify-content: space-between;
-	background-color: #1D1D1F;
+	gap: 12px;
+	background-color: var(--chrome-dark);
 	border-radius: 100px;
 	padding: 0 10px 0 20px;
 	box-shadow:
@@ -32,16 +61,10 @@ body {
 	;
 }
 
-@media screen and (max-width: 600px) {
-  .toolbar {
-	max-width: 90%;
-	font-size: 14px;
-  }
-}
-
 #logo-container {
 	display: flex;
 	align-items: center;
+	min-width: 0;
 }
 
 #icon { margin-right: 8px; }
@@ -56,15 +79,16 @@ body {
 	border-radius: 4px;
 	padding: 1px 4px;
 	margin-left: 8px;
-	
-	// Glow
-	/* -webkit-box-shadow:0px 0px 10px 0px color(display-p3 0.698 0.494 0.749);
-	-moz-box-shadow: 0px 0px 10px 0px color(display-p3 0.698 0.494 0.749);
-	box-shadow: 0px 0px 10px 0px color(display-p3 0.698 0.494 0.749); */
+}
+
+.toolbar-actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
 }
 
 .button {
-	background-color: #1D1D1F;
+	background-color: var(--chrome-dark);
 	border: 3px solid #38383d;
 	border-radius: 32px;
 	color: #DEDEDE;
@@ -75,14 +99,248 @@ body {
 	font-size: 14px;
 	font-weight: bold;
 	cursor: pointer;
-	transition: all 0.5s ease-out allow-discrete;
-	transition: 150ms linear 20ms;
+	transition: background-color 150ms linear, border-color 150ms linear;
 }
 
 .button:hover {
 	background-color: #222224;
-	border: 3px solid #484850;
-	color: #DEDEDE;
-	transition: all 0.5s ease-out allow-discrete;
-	transition: 150ms linear 20ms;
+	border-color: #484850;
+}
+
+.button:focus-visible {
+	outline: 2px solid #f49dff;
+	outline-offset: 2px;
+}
+
+@media screen and (max-width: 900px) {
+	.toolbar { max-width: 80%; }
+}
+
+@media screen and (max-width: 600px) {
+	.toolbar {
+		max-width: calc(100% - 32px);
+		font-size: 14px;
+		padding-left: 14px;
+	}
+	.button { padding: 6px 12px; font-size: 13px; }
+}
+
+@media screen and (max-width: 480px) {
+	#wordmark { display: none; }
+	#beta { margin-left: 0; }
+}
+
+/* ---------- Brush dock ---------- */
+
+.dock {
+	position: fixed;
+	z-index: 10;
+	left: 50%;
+	bottom: max(var(--edge), env(safe-area-inset-bottom));
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 8px;
+	background: var(--dock-bg);
+	border: 1px solid var(--dock-border);
+	border-radius: 999px;
+	box-shadow:
+	  0 1px 2px hsl(240deg 5% 20% / 0.06),
+	  0 4px 12px hsl(240deg 5% 20% / 0.08);
+}
+
+.dock-item {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 12px;
+	background: none;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.dock-item--size { width: 40px; }
+
+.dock-item:focus-visible {
+	outline: 2px solid #0a84ff;
+	outline-offset: 1px;
+}
+
+.dock-divider {
+	width: 2px;
+	height: 20px;
+	margin: 0 6px;
+	border-radius: 2px;
+	background: var(--divider);
+}
+
+/* selection ring */
+.dock-item[aria-pressed="true"] > .swatch,
+.dock-item[aria-pressed="true"] > .size {
+	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
+}
+
+/* color swatches */
+.swatch {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.swatch--rainbow {
+	background:
+	  radial-gradient(circle, rgb(255 255 255 / 0.85) 0%, rgb(255 255 255 / 0) 62%),
+	  conic-gradient(from 90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30);
+}
+
+.swatch--ink { background: var(--ink); }
+
+.dock-item:hover > .swatch { transform: scale(1.08); }
+.dock-item[aria-pressed="true"]:hover > .swatch { transform: none; }
+
+/* stroke size chips */
+.size {
+	display: block;
+	background: var(--chip);
+	transition: background-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.size--small  { width: 14px; height: 6px;  border-radius: 3px; }
+.size--medium { width: 20px; height: 9px;  border-radius: 4px; }
+.size--large  { width: 27px; height: 18px; border-radius: 6px; }
+
+.dock-item:hover > .size { background: var(--chip-hover); }
+.dock-item[aria-pressed="true"] > .size { background: var(--ink); }
+
+/* icon buttons (undo) — the SVG strokes with currentColor, so color drives every state */
+.dock-item--icon {
+	color: #48484a;
+	transition: color 120ms ease-out, transform 120ms ease-out;
+}
+
+.dock-item--icon:hover { color: var(--ink); }
+.dock-item--icon:active { transform: scale(0.9); }
+
+/* nothing to undo: dim it, but keep it in place so the dock doesn't shift */
+.dock-item--icon[aria-disabled="true"] {
+	color: #c7c7cc;
+	cursor: default;
+	transform: none;
+}
+
+.icon { display: block; }
+
+/* ---------- Tooltips ---------- */
+
+.tip {
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 14px);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 5px 5px 10px;
+	border-radius: 9px;
+	background: var(--ink);
+	color: #fff;
+	font-size: 13px;
+	line-height: 1;
+	white-space: nowrap;
+	pointer-events: none;
+	opacity: 0;
+	transform: translate(-50%, 4px);
+	transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.tip kbd {
+	display: grid;
+	place-items: center;
+	min-width: 20px;
+	height: 22px;
+	padding: 0 5px;
+	border-radius: 5px;
+	background: rgb(255 255 255 / 0.2);
+	font-family: ui-monospace, "SF Mono", Menlo, monospace;
+	font-size: 13px;
+}
+
+/* show after a short hover delay (mouse/trackpad only), or immediately on keyboard focus */
+@media (hover: hover) {
+	.dock-item:hover > .tip {
+		opacity: 1;
+		transform: translate(-50%, 0);
+		transition-delay: 350ms;
+	}
+}
+
+.dock-item:focus-visible > .tip {
+	opacity: 1;
+	transform: translate(-50%, 0);
+}
+
+/* never show tooltips while a stroke is in progress */
+body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
+
+/* ---------- Made by ---------- */
+
+#made-by {
+	z-index: 10;
+	position: fixed;
+	left: var(--edge);
+	bottom: max(var(--edge), env(safe-area-inset-bottom));
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	pointer-events: none;
+}
+
+/* gray circle shows through if the avatar image fails to load */
+.avatar-frame {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	overflow: hidden;
+	background-color: #e5e5ea;
+}
+
+#avatar {
+	width: 32px;
+	height: 32px;
+	object-fit: cover;
+}
+
+#right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	line-height: 1.2;
+}
+#made-by { z-index: 9999; }
+#made-by .small { font-size: 11px; font-weight: 500; color: #8e8e93; }
+#made-by h5.small { font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none;}
+
+#made-by a {
+	pointer-events: auto;
+	cursor: pointer;
+	color: inherit;
+	text-decoration: underline;
+}
+
+#made-by a:hover { text-decoration: underline; }
+
+#made-by a:focus-visible {
+	outline: 2px solid #0a84ff;
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+/* the dock needs the bottom edge on narrow screens */
+@media screen and (max-width: 640px) {
+	#made-by { display: none; }
 }
