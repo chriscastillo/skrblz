@@ -335,7 +335,8 @@ const paletteItems = PALETTE.map((c) => {
 	sw.className = c.id === 'rainbow' ? 'swatch swatch--rainbow' : 'swatch';
 	if (c.hex) sw.style.background = c.hex;
 	b.append(sw);
-	b.addEventListener('click', () => pickPaletteColor(c.id));
+	// e.detail is 0 when the click came from Enter/Space rather than a mouse or tap
+	b.addEventListener('click', (e) => pickPaletteColor(c.id, { fromKeyboard: e.detail === 0 }));
 	b.addEventListener('pointerenter', hoverSound('hover'));
 	palette.append(b);
 	return b;
@@ -357,10 +358,14 @@ function hoverSound(name) {
 }
 
 // Show the slot's current color on its swatch, tooltip and label.
+const RAINBOW_RING = 'conic-gradient(from 90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30)';
+
 function updateSlot() {
 	const c = paletteEntry(brush.paletteColor);
 	slotSwatch.classList.toggle('swatch--rainbow', c.id === 'rainbow');
 	slotSwatch.style.background = c.hex || '';
+	// selection ring matches the color (see #color-slot .swatch::before in styles.css)
+	slot.style.setProperty('--ring', c.hex || RAINBOW_RING);
 	slotTipLabel.textContent = c.name;
 	slot.setAttribute('aria-label', `Color: ${c.name}`);
 	paletteItems.forEach((b) => {
@@ -370,7 +375,7 @@ function updateSlot() {
 	});
 }
 
-function pickPaletteColor(id) {
+function pickPaletteColor(id, { fromKeyboard = false } = {}) {
 	const changed = brush.paletteColor !== id || brush.color !== 'palette';
 	brush.paletteColor = id;
 	brush.color = 'palette';
@@ -378,7 +383,8 @@ function pickPaletteColor(id) {
 	colorButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === 'palette')));
 	updateSlot();
 	applyBrush();
-	closePalette({ returnFocus: palette.contains(document.activeElement) });
+	// Only hand focus back to the slot for keyboard users; after a click it would show a stray focus ring
+	closePalette({ returnFocus: fromKeyboard });
 }
 
 const isPaletteOpen = () => !palette.hidden;
@@ -485,4 +491,5 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- Init ----------
 
+updateSlot(); // so the slot (and its ring) shows the starting color
 sizeCanvas();

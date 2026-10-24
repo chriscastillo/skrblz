@@ -140,10 +140,30 @@ body {
 
 /* color swatches */
 .swatch {
+	position: relative;
 	width: 22px;
 	height: 22px;
 	border-radius: 50%;
 	transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+/* The color slot's selection ring takes on its current color (a rainbow ring for Rainbow).
+   A box-shadow can't be a gradient, so the ring is drawn as a masked layer instead:
+   the swatch keeps its white 3px gap, and this paints the 2.5px band just outside it.
+   js.js sets --ring to the slot's color. */
+#color-slot[aria-pressed="true"] > .swatch {
+	box-shadow: 0 0 0 3px var(--dock-bg);
+}
+
+#color-slot[aria-pressed="true"] > .swatch::before {
+	content: "";
+	position: absolute;
+	inset: -5.5px;
+	border-radius: 50%;
+	background: var(--ring, var(--ink));
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+	mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+	pointer-events: none;
 }
 
 .swatch--rainbow {
