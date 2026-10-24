@@ -43,15 +43,14 @@ body {
 	left: 0;
 	right: 0;
 	margin-inline: auto;
-	max-width: 60%;
+	/* just the logo now — the bar hugs it and stays centered */
+	width: fit-content;
 	height: 60px;
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
 	background-color: var(--chrome-dark);
 	border-radius: 100px;
-	padding: 0 10px 0 20px;
+	padding: 0 20px;
 	box-shadow:
 	  0 1px 1px hsl(0deg 0% 0% / 0.075),
 	  0 2px 2px hsl(0deg 0% 0% / 0.075),
@@ -79,55 +78,6 @@ body {
 	border-radius: 4px;
 	padding: 1px 4px;
 	margin-left: 8px;
-}
-
-.toolbar-actions {
-	display: flex;
-	gap: 8px;
-	flex-shrink: 0;
-}
-
-.button {
-	background-color: var(--chrome-dark);
-	border: 3px solid #38383d;
-	border-radius: 32px;
-	color: #DEDEDE;
-	padding: 8px 16px;
-	text-align: center;
-	text-decoration: none;
-	display: inline-block;
-	font-size: 14px;
-	font-weight: bold;
-	cursor: pointer;
-	transition: background-color 150ms linear, border-color 150ms linear;
-}
-
-.button:hover {
-	background-color: #222224;
-	border-color: #484850;
-}
-
-.button:focus-visible {
-	outline: 2px solid #f49dff;
-	outline-offset: 2px;
-}
-
-@media screen and (max-width: 900px) {
-	.toolbar { max-width: 80%; }
-}
-
-@media screen and (max-width: 600px) {
-	.toolbar {
-		max-width: calc(100% - 32px);
-		font-size: 14px;
-		padding-left: 14px;
-	}
-	.button { padding: 6px 12px; font-size: 13px; }
-}
-
-@media screen and (max-width: 480px) {
-	#wordmark { display: none; }
-	#beta { margin-left: 0; }
 }
 
 /* ---------- Brush dock ---------- */
@@ -164,7 +114,7 @@ body {
 	-webkit-tap-highlight-color: transparent;
 }
 
-.dock-item--size { width: 40px; }
+.dock-item--size { width: 37px; }
 
 .dock-item:focus-visible {
 	outline: 2px solid #0a84ff;
@@ -235,6 +185,80 @@ body {
 }
 
 .icon { display: block; }
+
+/* narrow phones: tighten the dock so all ten items fit */
+@media screen and (max-width: 420px) {
+	.dock { gap: 2px; padding: 6px; }
+	.dock-item { width: 32px; }
+	.dock-item--size { width: 34px; }
+	.dock-divider { margin: 0 3px; }
+}
+
+/* ---------- Color popover ---------- */
+
+.color-slot {
+	position: relative;
+	display: flex;
+}
+
+/* no tooltip while its popover is open */
+.color-slot.is-open .tip { display: none; }
+
+.palette {
+	position: absolute;
+	left: 50%;
+	/* 12px above the dock: dock padding (6px) + border (1px) + gap (12px) */
+	bottom: calc(100% + 19px);
+	/* --shift nudges it back on-screen on narrow phones (set in js.js) */
+	transform: translateX(calc(-50% + var(--shift, 0px)));
+	transform-origin: 50% 100%;
+	display: grid;
+	grid-template-columns: repeat(4, 30px);
+	gap: 4px;
+	padding: 10px;
+	background: var(--dock-bg);
+	border: 1px solid var(--dock-border);
+	border-radius: 12px;
+	box-shadow:
+	  0 1px 2px hsl(240deg 5% 20% / 0.06),
+	  0 4px 12px hsl(240deg 5% 20% / 0.08);
+	animation: palette-in 140ms ease-out;
+}
+
+.palette[hidden] { display: none; }
+
+@keyframes palette-in {
+	from { opacity: 0; transform: translateX(calc(-50% + var(--shift, 0px))) translateY(4px) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.palette { animation: none; }
+}
+
+.palette-item {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.palette-item:focus-visible {
+	outline: 2px solid #0a84ff;
+	outline-offset: 1px;
+}
+
+.palette-item:hover > .swatch { transform: scale(1.08); }
+
+.palette-item[aria-pressed="true"] > .swatch {
+	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
+	transform: none;
+}
 
 /* ---------- Tooltips ---------- */
 

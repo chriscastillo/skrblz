@@ -33,19 +33,18 @@
 			</svg>
 			<div id="beta">BETA</div>
 		</div>
-		<div class="toolbar-actions">
-			<button type="button" class="button" id="export">Export</button>
-			<button type="button" class="button" id="clear">Clear</button>
-		</div>
 	</section>
 	
 	<canvas id="skrblz" aria-label="Drawing canvas"></canvas>
 	
-	<div class="dock" role="toolbar" aria-label="Brush">
-		<button type="button" class="dock-item" data-color="rainbow" aria-label="Rainbow" aria-keyshortcuts="1" aria-pressed="true">
-			<span class="swatch swatch--rainbow"></span>
-			<span class="tip" aria-hidden="true">Rainbow <kbd>1</kbd></span>
-		</button>
+	<div class="dock" role="toolbar" aria-label="Drawing tools">
+		<div class="color-slot">
+			<button type="button" class="dock-item" id="color-slot" data-color="palette" aria-label="Color: Rainbow" aria-keyshortcuts="1" aria-pressed="true" aria-haspopup="true" aria-expanded="false" aria-controls="palette">
+				<span class="swatch swatch--rainbow"></span>
+				<span class="tip" aria-hidden="true"><span class="tip-label">Rainbow</span> <kbd>1</kbd></span>
+			</button>
+			<div class="palette" id="palette" role="group" aria-label="Colors" hidden></div>
+		</div>
 		<button type="button" class="dock-item" data-color="ink" aria-label="Black" aria-keyshortcuts="2" aria-pressed="false">
 			<span class="swatch swatch--ink"></span>
 			<span class="tip" aria-hidden="true">Black <kbd>2</kbd></span>
@@ -69,9 +68,16 @@
 		<span class="dock-divider" aria-hidden="true"></span>
 		
 		<button type="button" class="dock-item dock-item--icon" id="undo" aria-label="Undo" aria-keyshortcuts="Z" aria-disabled="true">
-			<!-- Lucide "undo-2" (ISC license) -->
 			<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
 			<span class="tip" aria-hidden="true">Undo <kbd>z</kbd></span>
+		</button>
+		<button type="button" class="dock-item dock-item--icon" id="clear" aria-label="Clear" aria-keyshortcuts="C" aria-disabled="true">
+			<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.5 10.5 22 2"/><path d="M14.734 13.841a2 2 0 0 0-.314-2.42L12.58 9.58a2 2 0 0 0-2.421-.314l-7.657 4.461A1 1 0 0 0 2.3 15.3l6.403 6.403a1 1 0 0 0 1.571-.204z"/><path d="m5 18 2-2"/><path d="m7.699 10.7 5.602 5.601"/></svg>
+			<span class="tip" aria-hidden="true">Clear <kbd>c</kbd></span>
+		</button>
+		<button type="button" class="dock-item dock-item--icon" id="export" aria-label="Export PNG" aria-keyshortcuts="E" aria-disabled="true">
+			<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21"/><path d="m14 19 3 3v-5.5"/><path d="m17 22 3-3"/><circle cx="9" cy="9" r="2"/></svg>
+			<span class="tip" aria-hidden="true">Export <kbd>e</kbd></span>
 		</button>
 	</div>
 	
