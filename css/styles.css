@@ -189,6 +189,15 @@ body {
 
 .icon { display: block; }
 
+/* Optical spacing: the gaps above are mathematically equal, but the thin Small chip makes
+   the space before it look bigger, and the solid Large chip makes the space after it look
+   tighter. Nudge both so they read as equal. */
+.dock-item[data-size="small"] { margin-left: calc(var(--gap) * -0.125); }  /* -2px on phones */
+.dock-item[data-size="large"] { margin-right: calc(var(--gap) * 0.1875); } /* +3px on phones */
+
+/* a little extra room between Undo, Clear and Export so they're easier to tap */
+.dock-item--icon + .dock-item--icon { margin-left: 4px; }
+
 /* narrow phones: a slightly smaller gap so everything fits */
 @media screen and (max-width: 420px) {
 	.dock { --gap: 16px; }
