@@ -90,8 +90,13 @@ body {
 	transform: translateX(-50%);
 	display: flex;
 	align-items: center;
-	gap: 4px;
-	padding: 6px 8px;
+	/* --gap is the visible space between every pair of neighbors (shape edge to shape edge).
+	   Each button is its shape's width plus half a gap on each side, and dividers get the
+	   same half-gap margins, so chips, swatches, icons and dividers all end up evenly spaced. */
+	--gap: 20px;
+	/* centered with left: 50%, which would otherwise let the browser squeeze it to half the screen */
+	width: max-content;
+	padding: 6px;
 	background: var(--dock-bg);
 	border: 1px solid var(--dock-border);
 	border-radius: 999px;
@@ -104,17 +109,15 @@ body {
 	position: relative;
 	display: grid;
 	place-items: center;
-	width: 36px;
+	flex-shrink: 0;
 	height: 36px;
-	padding: 0;
+	padding: 0 calc(var(--gap) / 2);
 	border: 0;
 	border-radius: 12px;
 	background: none;
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
 }
-
-.dock-item--size { width: 37px; }
 
 .dock-item:focus-visible {
 	outline: 2px solid #0a84ff;
@@ -124,7 +127,7 @@ body {
 .dock-divider {
 	width: 2px;
 	height: 20px;
-	margin: 0 6px;
+	margin: 0 calc(var(--gap) / 2);
 	border-radius: 2px;
 	background: var(--divider);
 }
@@ -168,7 +171,7 @@ body {
 .dock-item:hover > .size { background: var(--chip-hover); }
 .dock-item[aria-pressed="true"] > .size { background: var(--ink); }
 
-/* icon buttons (undo) — the SVG strokes with currentColor, so color drives every state */
+/* icon buttons (undo, clear, export) — the SVG strokes with currentColor, so color drives every state */
 .dock-item--icon {
 	color: #48484a;
 	transition: color 120ms ease-out, transform 120ms ease-out;
@@ -186,12 +189,14 @@ body {
 
 .icon { display: block; }
 
-/* narrow phones: tighten the dock so all ten items fit */
+/* narrow phones: a slightly smaller gap so everything fits */
 @media screen and (max-width: 420px) {
-	.dock { gap: 2px; padding: 6px; }
-	.dock-item { width: 32px; }
-	.dock-item--size { width: 34px; }
-	.dock-divider { margin: 0 3px; }
+	.dock { --gap: 16px; }
+}
+
+/* touch screens: taller buttons for easier tapping (44px is Apple's minimum tap size) */
+@media (pointer: coarse) {
+	.dock-item { height: 44px; }
 }
 
 /* ---------- Color popover ---------- */
