@@ -361,8 +361,8 @@ const paletteItems = PALETTE.map((c) => {
 });
 
 // Hover sounds: popover colors play 'hover', toolbar buttons play 'typing'. Mouse/trackpad
-// only — on touch screens a tap also counts as a hover, which would play it on top of the
-// click sound. Dimmed buttons stay quiet, and a short gap keeps a fast sweep from buzzing
+// only — on touch screens a tap also counts as a hover, which would play it on top of the click sound
+
 let lastHover = 0;
 function hoverSound(name) {
 	return (e) => {
@@ -488,7 +488,7 @@ const SHORTCUTS = {
 window.addEventListener('keydown', (e) => {
 	const t = e.target;
 	if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-	// ⌘Z / Ctrl+Z also undo, since that's muscle memory.
+	// ⌘Z / Ctrl+Z also undo, since that's muscle memory
 	if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
 		e.preventDefault();
 		undo();
@@ -498,7 +498,7 @@ window.addEventListener('keydown', (e) => {
 		closePalette({ returnFocus: slotWrap.contains(document.activeElement) });
 		return;
 	}
-	// Leave every other ⌘/Ctrl/Alt combo (⌘S, ⌘L, ⌘M…) to the browser and OS.
+	// Leave every other ⌘/Ctrl/Alt combo (⌘S, ⌘L, ⌘M…) to the browser and OS
 	if (e.metaKey || e.ctrlKey || e.altKey) return;
 	const action = SHORTCUTS[e.key.toLowerCase()];
 	if (action) {
@@ -509,7 +509,7 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- No zooming ----------
 // The CSS (touch-action: none) and viewport tag handle Chrome/Android, but iPhone Safari
-// still allows pinch-zoom, so cancel its pinch gestures and any two-finger touch moves.
+// still allows pinch-zoom, so cancel its pinch gestures and any two-finger touch moves
 
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
 	document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
