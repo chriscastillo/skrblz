@@ -3,15 +3,17 @@
 	--chrome-dark: #1D1D1F;
 	--dock-bg: #ffffff;
 	--dock-border: #e3e3e8;
+	--dock-pad: 6px;
 	--chip: #c9c9d1;
 	--chip-hover: #a9a9b3;
 	--divider: #dcdce1;
+	--focus: #0a84ff;
 	--edge: 20px;
+	--rainbow: conic-gradient(from 90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30);
 }
 
 html, body {
 	height: 100%;
-	/* no pinch-zoom, double-tap zoom or scrolling anywhere — this is a drawing surface */
 	touch-action: none;
 }
 
@@ -19,7 +21,6 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	overflow: hidden;
 	background: #fff;
-	/* stop iOS from selecting text / showing callouts while drawing */
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-touch-callout: none;
@@ -32,11 +33,10 @@ body {
 	height: 100%;
 	z-index: 0;
 	cursor: url('../img/cursor.svg') 14 14, crosshair;
-	/* prevent touch devices from scrolling / zooming while drawing */
 	touch-action: none;
 }
 
-/* ---------- Top bar ---------- */
+/* Header */
 
 .toolbar {
 	position: fixed;
@@ -81,20 +81,19 @@ body {
 	margin-left: 8px;
 }
 
-/* ---------- Brush dock ---------- */
+/* Dock */
 
 .dock {
+	--gap: 20px;
 	position: fixed;
 	z-index: 10;
 	left: 50%;
 	bottom: max(var(--edge), env(safe-area-inset-bottom));
 	transform: translateX(-50%);
+	width: max-content;
 	display: flex;
 	align-items: center;
-	--gap: 20px;
-	/* centered with left: 50%, which would otherwise let the browser squeeze it to half the screen */
-	width: max-content;
-	padding: 6px;
+	padding: var(--dock-pad);
 	background: var(--dock-bg);
 	border: 1px solid var(--dock-border);
 	border-radius: 999px;
@@ -118,7 +117,7 @@ body {
 }
 
 .dock-item:focus-visible {
-	outline: 2px solid #0a84ff;
+	outline: 2px solid var(--focus);
 	outline-offset: 1px;
 }
 
@@ -130,13 +129,21 @@ body {
 	background: var(--divider);
 }
 
-/* selection ring */
-.dock-item[aria-pressed="true"] > .swatch,
-.dock-item[aria-pressed="true"] > .size {
-	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
+.dock-item[data-size="small"] { margin-left: calc(var(--gap) / -8); }
+.dock-item[data-size="large"] { margin-right: calc(var(--gap) * 3 / 16); }
+
+.dock-item--icon + .dock-item--icon { margin-left: 4px; }
+
+@media screen and (max-width: 420px) {
+	.dock { --gap: 16px; }
 }
 
-/* color swatches */
+@media (pointer: coarse) {
+	.dock-item { height: 44px; }
+}
+
+/* Swatches */
+
 .swatch {
 	position: relative;
 	width: 22px;
@@ -145,47 +152,58 @@ body {
 	transition: transform 120ms ease-out, box-shadow 120ms ease-out;
 }
 
-#color-slot[aria-pressed="true"] > .swatch {
-	box-shadow: 0 0 0 3px var(--dock-bg);
+.swatch--ink { background: var(--ink); }
+
+.swatch--rainbow {
+	--ring: var(--rainbow);
+	background:
+	  radial-gradient(circle, rgb(255 255 255 / 0.85) 0%, rgb(255 255 255 / 0) 62%),
+	  var(--rainbow);
 }
 
-#color-slot[aria-pressed="true"] > .swatch::before {
+.dock-item:hover > .swatch,
+.palette-item:hover > .swatch { transform: scale(1.08); }
+
+.dock-item[aria-pressed="true"] > .swatch,
+.palette-item[aria-pressed="true"] > .swatch { transform: none; }
+
+[aria-pressed="true"] > .swatch--ink,
+[aria-pressed="true"] > .size {
+	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
+}
+
+:is(#color-slot, .palette-item)[aria-pressed="true"] > .swatch {
+	box-shadow: 0 0 0 var(--ring-gap, 3px) var(--dock-bg);
+}
+
+:is(#color-slot, .palette-item)[aria-pressed="true"] > .swatch::before {
 	content: "";
 	position: absolute;
-	inset: -5.5px;
+	inset: calc(-1 * (var(--ring-gap, 3px) + var(--ring-width, 2.5px)));
 	border-radius: 50%;
 	background: var(--ring, var(--ink));
-	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
-	mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-width, 2.5px)), #000 calc(100% - var(--ring-width, 2.5px) + 0.5px));
+	mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring-width, 2.5px)), #000 calc(100% - var(--ring-width, 2.5px) + 0.5px));
 	pointer-events: none;
 }
 
-.swatch--rainbow {
-	background:
-	  radial-gradient(circle, rgb(255 255 255 / 0.85) 0%, rgb(255 255 255 / 0) 62%),
-	  conic-gradient(from 90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30);
-}
+/* Size chips */
 
-.swatch--ink { background: var(--ink); }
-
-.dock-item:hover > .swatch { transform: scale(1.08); }
-.dock-item[aria-pressed="true"]:hover > .swatch { transform: none; }
-
-/* stroke size chips */
 .size {
 	display: block;
 	background: var(--chip);
 	transition: background-color 120ms ease-out, box-shadow 120ms ease-out;
 }
 
-.size--small  { width: 14px; height: 6px;  border-radius: 3px; }
-.size--medium { width: 20px; height: 9px;  border-radius: 4px; }
-.size--large  { width: 27px; height: 18px; border-radius: 6px; }
+.size--small { width: 14px; height: 6px; border-radius: 3px; }
+.size--medium { width: 20px; height: 9px; border-radius: 4px; }
+.size--large { width: 27px; height: 18px; border-radius: 6px; }
 
 .dock-item:hover > .size { background: var(--chip-hover); }
 .dock-item[aria-pressed="true"] > .size { background: var(--ink); }
 
-/* icon buttons (undo, clear, export) — the SVG strokes with currentColor */
+/* Undo, clear, export */
+
 .dock-item--icon {
 	color: #48484a;
 	transition: color 120ms ease-out, transform 120ms ease-out;
@@ -202,38 +220,22 @@ body {
 
 .icon { display: block; }
 
-.dock-item[data-size="small"] { margin-left: calc(var(--gap) * -0.125); }  /* -2px on phones */
-.dock-item[data-size="large"] { margin-right: calc(var(--gap) * 0.1875); } /* +3px on phones */
+/* Color popover */
 
-/* a little extra room between Undo, Clear and Export so they're easier to tap */
-.dock-item--icon + .dock-item--icon { margin-left: 4px; }
-
-/* narrow phones: a slightly smaller gap so everything fits */
-@media screen and (max-width: 420px) {
-	.dock { --gap: 16px; }
-}
-
-/* touch screens: taller buttons for easier tapping */
-@media (pointer: coarse) {
-	.dock-item { height: 44px; }
-}
-
-/* ---------- Color popover ---------- */
-
-.color-slot {
+.color-picker {
 	position: relative;
 	display: flex;
 }
 
-/* no tooltip while its popover is open */
-.color-slot.is-open .tip { display: none; }
+.color-picker.is-open .tip { display: none; }
 
 .palette {
+	--popover-gap: 12px;
 	position: absolute;
 	left: 50%;
-	/* 12px above the dock: dock padding (6px) + border (1px) + gap (12px) */
-	bottom: calc(100% + 19px);
-	/* --shift nudges it back on-screen on narrow phones (set in js.js) */
+	/* measured from the dock's edge, not the swatch's: + dock padding + border */
+	bottom: calc(100% + var(--popover-gap) + var(--dock-pad) + 1px);
+	/* --shift keeps it on-screen; set in js.js */
 	transform: translateX(calc(-50% + var(--shift, 0px)));
 	transform-origin: 50% 100%;
 	display: grid;
@@ -273,18 +275,11 @@ body {
 }
 
 .palette-item:focus-visible {
-	outline: 2px solid #0a84ff;
+	outline: 2px solid var(--focus);
 	outline-offset: 1px;
 }
 
-.palette-item:hover > .swatch { transform: scale(1.08); }
-
-.palette-item[aria-pressed="true"] > .swatch {
-	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
-	transform: none;
-}
-
-/* touch screens: 1.2× larger popover and swatches */
+/* 1.2× on touch screens */
 @media (pointer: coarse) {
 	.palette {
 		grid-template-columns: repeat(4, 36px);
@@ -292,14 +287,16 @@ body {
 		padding: 12px;
 		border-radius: 14px;
 	}
-	.palette-item { width: 36px; height: 36px; }
-	.palette-item > .swatch { width: 26px; height: 26px; }
-	.palette-item[aria-pressed="true"] > .swatch {
-		box-shadow: 0 0 0 3.6px var(--dock-bg), 0 0 0 6.6px var(--ink);
+	.palette-item {
+		width: 36px;
+		height: 36px;
+		--ring-gap: 3.6px;
+		--ring-width: 3px;
 	}
+	.palette-item > .swatch { width: 26px; height: 26px; }
 }
 
-/* ---------- Tooltips ---------- */
+/* Tooltips */
 
 .tip {
 	position: absolute;
@@ -333,7 +330,6 @@ body {
 	font-size: 13px;
 }
 
-/* show after a short hover delay (mouse/trackpad only), or immediately on keyboard focus */
 @media (hover: hover) {
 	.dock-item:hover > .tip {
 		opacity: 1;
@@ -347,13 +343,12 @@ body {
 	transform: translate(-50%, 0);
 }
 
-/* never show tooltips while a stroke is in progress */
 body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 
-/* ---------- Made by ---------- */
+/* Made by */
 
 #made-by {
-	z-index: 10;
+	z-index: 9999;
 	position: fixed;
 	left: var(--edge);
 	bottom: max(var(--edge), env(safe-area-inset-bottom));
@@ -363,7 +358,6 @@ body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 	pointer-events: none;
 }
 
-/* gray circle shows through if the avatar image fails to load */
 .avatar-frame {
 	width: 32px;
 	height: 32px;
@@ -384,9 +378,9 @@ body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 	align-items: flex-start;
 	line-height: 1.2;
 }
-#made-by { z-index: 9999; }
+
 #made-by .small { font-size: 11px; font-weight: 500; color: #8e8e93; }
-#made-by h5.small { font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none;}
+#made-by h5.small { font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none; }
 
 #made-by a {
 	pointer-events: auto;
@@ -395,15 +389,12 @@ body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 	text-decoration: underline;
 }
 
-#made-by a:hover { text-decoration: underline; }
-
 #made-by a:focus-visible {
-	outline: 2px solid #0a84ff;
+	outline: 2px solid var(--focus);
 	outline-offset: 2px;
 	border-radius: 3px;
 }
 
-/* the dock needs the bottom edge on narrow screens */
 @media screen and (max-width: 640px) {
 	#made-by { display: none; }
 }

@@ -1,74 +1,89 @@
-const canvas = document.querySelector('#skrblz');
-const ctx = canvas.getContext('2d');
+// Skrblz
 
-// ---------- Brush settings ----------
+// Settings
 
 const INK = '#1f1f1d';
 
-const SIZES = {
-	small: 6,
-	medium: 14,
-	large: 28,
-};
+const SIZES = { small: 6, medium: 14, large: 28 };
 
-// Colors in the popover
 const PALETTE = [
-	{ id: 'pink',     name: 'Pink',     hex: '#FE60B8' },
-	{ id: 'green',    name: 'Green',    hex: '#4CC342' },
-	{ id: 'sky',      name: 'Sky',      hex: '#7ECDF0' },
-	{ id: 'crimson',  name: 'Crimson',  hex: '#B91A45' },
-	{ id: 'purple',   name: 'Purple',   hex: '#672E91' },
-	{ id: 'blue',     name: 'Blue',     hex: '#1E71EA' },
-	{ id: 'orange',   name: 'Orange',   hex: '#FF743E' },
-	{ id: 'forest',   name: 'Forest',   hex: '#177525' },
-	{ id: 'yellow',   name: 'Yellow',   hex: '#F3DC3D' },
-	{ id: 'red',      name: 'Red',      hex: '#ED3546' },
+	{ id: 'pink', name: 'Pink', hex: '#FE60B8' },
+	{ id: 'green', name: 'Green', hex: '#4CC342' },
+	{ id: 'sky', name: 'Sky', hex: '#7ECDF0' },
+	{ id: 'crimson', name: 'Crimson', hex: '#B91A45' },
+	{ id: 'purple', name: 'Purple', hex: '#672E91' },
+	{ id: 'blue', name: 'Blue', hex: '#1E71EA' },
+	{ id: 'orange', name: 'Orange', hex: '#FF743E' },
+	{ id: 'forest', name: 'Forest', hex: '#177525' },
+	{ id: 'yellow', name: 'Yellow', hex: '#F3DC3D' },
+	{ id: 'red', name: 'Red', hex: '#ED3546' },
 	{ id: 'lavender', name: 'Lavender', hex: '#C566FF' },
-	{ id: 'rainbow',  name: 'Rainbow' },
+	{ id: 'rainbow', name: 'Rainbow' },
 ];
+const PALETTE_COLUMNS = 4;
+const POPOVER_EDGE_MARGIN = 8;
+
+// uisfx.com, "zen" pack
+const SOUNDS = {
+	select: { src: 'sounds/select.mp3', volume: 0.2 },
+	typing: { src: 'sounds/typing.mp3', volume: 0.2 },
+	hover: { src: 'sounds/hover.mp3', volume: 0.1 },
+	reaction: { src: 'sounds/reaction.mp3', volume: 0.2 },
+	uncheck: { src: 'sounds/uncheck.mp3', volume: 0.2 },
+};
+const HOVER_SOUND_MIN_GAP_MS = 40;
+
+// Elements
+
+const canvas = document.querySelector('#skrblz');
+const ctx = canvas.getContext('2d');
+
+const colorButtons = document.querySelectorAll('[data-color]');
+const sizeButtons = document.querySelectorAll('[data-size]');
+const inkButton = document.querySelector('[data-color="ink"]');
+const undoButton = document.querySelector('#undo');
+const clearButton = document.querySelector('#clear');
+const exportButton = document.querySelector('#export');
+
+const slot = document.querySelector('#color-slot');
+const picker = slot.parentElement;
+const slotSwatch = slot.querySelector('.swatch');
+const slotTipLabel = slot.querySelector('.tip-label');
+const palette = document.querySelector('#palette');
+
+// State
 
 const brush = {
-	color: 'palette',       // 'palette' (the popover slot) | 'ink' (black)
-	paletteColor: 'rainbow', // id from PALETTE — what the slot is set to
-	size: 'medium',          // key of SIZES
+	color: 'palette', // 'palette' (whatever the color slot holds)
+	paletteColor: 'rainbow',
+	size: 'medium',
 	hue: 0,
 };
 
-const paletteEntry = (id) => PALETTE.find((c) => c.id === id);
-
-function strokeColor() {
-	if (brush.color === 'ink') return INK;
-	if (brush.paletteColor === 'rainbow') return `hsl(${brush.hue}, 100%, 50%)`;
-	return paletteEntry(brush.paletteColor).hex;
-}
-
-// Context settings are reset whenever the canvas is resized, so they live in one place
-function applyBrush() {
-	ctx.lineJoin = 'round';
-	ctx.lineCap = 'round';
-	ctx.lineWidth = SIZES[brush.size];
-	ctx.strokeStyle = strokeColor();
-}
-
-// ---------- Sounds ----------
-// UI sounds from uisfx.com ("zen" feel, CC0). Volumes are the library's own per-sound defaults.
-// Browsers only allow audio after the person interacts with the page, so the AudioContext is
-// created and unlocked on the first tap, click or key press
-
-const SOUNDS = {
-	select:   { src: 'sounds/select.mp3',   volume: 0.2 }, // colors, sizes, export
-	typing:   { src: 'sounds/typing.mp3',   volume: 0.2 }, // hovering toolbar buttons
-	hover:    { src: 'sounds/hover.mp3',    volume: 0.1 }, // hovering colors in the popover
-	reaction: { src: 'sounds/reaction.mp3', volume: 0.2 }, // clearing the canvas
-	uncheck:  { src: 'sounds/uncheck.mp3',  volume: 0.2 }, // undo
-};
+const actions = [];
+let currentStroke = null;
+let drawing = false;
+let resizeQueued = false;
 
 let audio = null;
-const soundData = {};    // name → Promise<ArrayBuffer>
-const soundBuffers = {}; // name → Promise<AudioBuffer>
+const soundData = {};
+const soundBuffers = {};
+const fallbackAudio = {};
+let lastHoverSoundAt = 0;
 
-for (const [name, { src }] of Object.entries(SOUNDS)) {
-	soundData[name] = fetch(src).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+let paletteItems = [];
+
+// Audio
+
+function loadSounds() {
+	for (const [name, { src }] of Object.entries(SOUNDS)) {
+		soundData[name] = fetch(src)
+			.then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
+			.catch((err) => {
+				console.warn(`Couldn't load sound "${name}"`, err);
+				return null;
+			});
+	}
 }
 
 function unlockAudio() {
@@ -78,46 +93,37 @@ function unlockAudio() {
 		audio = new AudioCtx();
 		for (const name of Object.keys(SOUNDS)) {
 			soundBuffers[name] = soundData[name]
-				.then((data) => (data ? audio.decodeAudioData(data.slice(0)) : null))
-				.catch(() => null);
+				.then((data) => data && audio.decodeAudioData(data.slice(0)))
+				.catch((err) => {
+					console.warn(`Couldn't decode sound "${name}"`, err);
+					return null;
+				});
 		}
 	}
-	// Wake it up if it's not running yet — or again, after iOS pauses it
-	// ("interrupted") when you switch apps or get a call
 	if (audio.state !== 'running') {
-		audio.resume().catch(() => {});
-		// older iOS Safari only unlocks audio after something actually plays during a tap
-		const blip = audio.createBufferSource();
-		blip.buffer = audio.createBuffer(1, 1, 22050);
-		blip.connect(audio.destination);
-		blip.start();
+		audio.resume().catch((err) => console.warn('Audio resume failed', err));
+		// Older iOS Safari only unlocks Web Audio once something plays during a tap.
+		const silence = audio.createBufferSource();
+		silence.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+		silence.connect(audio.destination);
+		silence.start();
 	}
 }
 
-// Safari on iPhone/iPad only allows audio to start on a finished tap (touchend/click),
-// not when the finger first touches down, so listen for all of them
-for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
-	window.addEventListener(type, unlockAudio, { capture: true, passive: true });
-}
-
-// Fallback for when Web Audio can't load the files — e.g. index.html opened straight from
-// Finder (a file:// URL), where browsers block fetch(). An <audio> element still works there
-const fallbackEls = {};
-
-function playFallback(name) {
+function playWithAudioElement(name) {
 	const { src, volume } = SOUNDS[name];
-	fallbackEls[name] ??= new Audio(src);
-	const el = fallbackEls[name].cloneNode(); // a fresh copy so quick repeat clicks can overlap
+	fallbackAudio[name] ??= new Audio(src);
+	const el = fallbackAudio[name].cloneNode();
 	el.volume = volume;
-	el.play().catch(() => {});
+	el.play().catch((err) => console.warn(`Couldn't play sound "${name}"`, err));
 }
 
 async function playSound(name) {
 	unlockAudio();
-	if (!audio) return playFallback(name);
+	if (!audio) return playWithAudioElement(name);
 	if (audio.state !== 'running') audio.resume().catch(() => {});
 	const buffer = await soundBuffers[name];
-	if (!buffer) return playFallback(name);
+	if (!buffer) return playWithAudioElement(name);
 	const source = audio.createBufferSource();
 	const gain = audio.createGain();
 	gain.gain.value = SOUNDS[name].volume;
@@ -126,26 +132,69 @@ async function playSound(name) {
 	source.start();
 }
 
-// ---------- History ----------
+function hoverSound(name) {
+	return (e) => {
+		// On touch screens a tap also fires pointerenter.
+		if (e.pointerType === 'touch') return;
+		if (e.currentTarget.getAttribute('aria-disabled') === 'true') return;
+		const now = performance.now();
+		if (now - lastHoverSoundAt < HOVER_SOUND_MIN_GAP_MS) return;
+		lastHoverSoundAt = now;
+		playSound(name);
+	};
+}
 
-const actions = []; // undo history
-let currentStroke = null;
+// Canvas
+
+const paletteEntry = (id) => PALETTE.find((c) => c.id === id);
+
+function strokeColor() {
+	if (brush.color === 'ink') return INK;
+	if (brush.paletteColor === 'rainbow') return `hsl(${brush.hue}, 100%, 50%)`;
+	return paletteEntry(brush.paletteColor).hex;
+}
+
+function applyBrush() {
+	ctx.lineJoin = 'round';
+	ctx.lineCap = 'round';
+	ctx.lineWidth = SIZES[brush.size];
+	ctx.strokeStyle = strokeColor();
+}
 
 function drawSegment(x0, y0, x1, y1, color) {
-	ctx.strokeStyle = color; // set before stroking so each segment gets its own color
+	ctx.strokeStyle = color;
 	ctx.beginPath();
 	ctx.moveTo(x0, y0);
 	ctx.lineTo(x1, y1);
 	ctx.stroke();
 }
 
-function wipe() {
+function drawDot({ x, y, c }, width) {
+	ctx.fillStyle = c;
+	ctx.beginPath();
+	ctx.arc(x, y, width / 2, 0, Math.PI * 2);
+	ctx.fill();
+}
+
+const isDot = (points) => points.every((p) => p.x === points[0].x && p.y === points[0].y);
+
+function drawStroke({ points, width }) {
+	ctx.lineWidth = width;
+	if (isDot(points)) return drawDot(points[0], width);
+	points.forEach((p, i) => {
+		const from = points[i - 1] || p;
+		drawSegment(from.x, from.y, p.x, p.y, p.c);
+	});
+}
+
+function clearPixels() {
 	ctx.save();
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.restore();
 }
 
+// Index of the first action after the most recent clear.
 function visibleStart() {
 	for (let i = actions.length - 1; i >= 0; i--) {
 		if (actions[i].type === 'clear') return i + 1;
@@ -153,32 +202,77 @@ function visibleStart() {
 	return 0;
 }
 
+const canvasIsEmpty = () => visibleStart() === actions.length;
+
 function render() {
-	wipe();
-	// Resizing the canvas resets its drawing settings to the defaults (flat line ends, sharp
-	// corners), so set the round ends and joins again before replaying the strokes
+	clearPixels();
+	// Resizing a canvas resets its context, including line caps and joins.
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
-	for (let i = visibleStart(); i < actions.length; i++) {
-		const action = actions[i];
-		if (action.type !== 'stroke') continue;
-		ctx.lineWidth = action.width;
-		const pts = action.points;
-		for (let j = 0; j < pts.length; j++) {
-			const from = pts[j - 1] || pts[j];
-			drawSegment(from.x, from.y, pts[j].x, pts[j].y, pts[j].c);
-		}
+	for (const action of actions.slice(visibleStart())) {
+		if (action.type === 'stroke') drawStroke(action);
 	}
 	applyBrush();
 }
 
-const undoButton = document.querySelector('#undo');
-const clearButton = document.querySelector('#clear');
-const exportButton = document.querySelector('#export');
+function sizeCanvas() {
+	const dpr = window.devicePixelRatio || 1;
+	canvas.width = Math.round(window.innerWidth * dpr);
+	canvas.height = Math.round(window.innerHeight * dpr);
+	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	render();
+}
 
-const canvasIsEmpty = () => visibleStart() === actions.length;
+function onResize() {
+	if (resizeQueued) return;
+	resizeQueued = true;
+	requestAnimationFrame(() => {
+		resizeQueued = false;
+		sizeCanvas();
+	});
+}
 
-// Dim Undo when there's nothing to undo, and Clear/Export when nothing's on the canvas
+// Drawing input
+
+function addPoint(x, y) {
+	const points = currentStroke.points;
+	const prev = points[points.length - 1] || { x, y };
+	const c = strokeColor();
+	drawSegment(prev.x, prev.y, x, y, c);
+	points.push({ x, y, c });
+}
+
+function startStroke(e) {
+	if (e.pointerType === 'mouse' && e.button !== 0) return;
+	drawing = true;
+	document.body.classList.add('is-drawing');
+	canvas.setPointerCapture(e.pointerId);
+	currentStroke = { type: 'stroke', width: SIZES[brush.size], points: [] };
+	actions.push(currentStroke);
+	updateActionButtons();
+	addPoint(e.clientX, e.clientY);
+}
+
+function continueStroke(e) {
+	if (!drawing) return;
+	const points = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+	if (points.length) {
+		for (const p of points) addPoint(p.clientX, p.clientY);
+	} else {
+		addPoint(e.clientX, e.clientY);
+	}
+	if (brush.color === 'palette' && brush.paletteColor === 'rainbow') brush.hue = (brush.hue + 1) % 360;
+}
+
+function endStroke() {
+	if (currentStroke && isDot(currentStroke.points)) drawDot(currentStroke.points[0], currentStroke.width);
+	drawing = false;
+	currentStroke = null;
+	document.body.classList.remove('is-drawing');
+}
+
+// Undo, clear, export
+
 function updateActionButtons() {
 	undoButton.setAttribute('aria-disabled', String(actions.length === 0));
 	clearButton.setAttribute('aria-disabled', String(canvasIsEmpty()));
@@ -193,93 +287,20 @@ function undo() {
 	playSound('uncheck');
 }
 
-undoButton.addEventListener('click', undo);
-
-// ---------- Canvas sizing ----------
-
-function sizeCanvas() {
-	const dpr = window.devicePixelRatio || 1;
-	canvas.width = Math.round(window.innerWidth * dpr);
-	canvas.height = Math.round(window.innerHeight * dpr);
-	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-	render();
-}
-
-let resizeQueued = false;
-window.addEventListener('resize', () => {
-	if (resizeQueued) return;
-	resizeQueued = true;
-	requestAnimationFrame(() => {
-		resizeQueued = false;
-		sizeCanvas();
-	});
-});
-
-// ---------- Drawing ----------
-
-let drawing = false;
-
-function addPoint(x, y) {
-	const pts = currentStroke.points;
-	const prev = pts[pts.length - 1] || { x, y };
-	const c = strokeColor();
-	drawSegment(prev.x, prev.y, x, y, c);
-	pts.push({ x, y, c });
-}
-
-canvas.addEventListener('pointerdown', (e) => {
-	if (e.pointerType === 'mouse' && e.button !== 0) return;
-	drawing = true;
-	document.body.classList.add('is-drawing');
-	canvas.setPointerCapture(e.pointerId);
-	currentStroke = { type: 'stroke', width: SIZES[brush.size], points: [] };
-	actions.push(currentStroke);
-	updateActionButtons();
-	addPoint(e.clientX, e.clientY); // a tap/click leaves a dot
-});
-
-canvas.addEventListener('pointermove', (e) => {
-	if (!drawing) return;
-	// Coalesced events give smoother lines on fast strokes and pens
-	const points = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-	if (points.length) {
-		for (const p of points) addPoint(p.clientX, p.clientY);
-	} else {
-		addPoint(e.clientX, e.clientY);
-	}
-	if (brush.color === 'palette' && brush.paletteColor === 'rainbow') brush.hue = (brush.hue + 1) % 360;
-});
-
-function stopDrawing() {
-	drawing = false;
-	currentStroke = null;
-	document.body.classList.remove('is-drawing');
-}
-
-canvas.addEventListener('pointerup', stopDrawing);
-canvas.addEventListener('pointercancel', stopDrawing);
-canvas.addEventListener('lostpointercapture', stopDrawing);
-
-// ---------- Clear ----------
-
 function clearCanvas() {
-	// Nothing on screen → don't add an empty step to undo through.
 	if (drawing || canvasIsEmpty()) return;
-	actions.push({ type: 'clear' }); // recorded, so undo can bring the drawing back
+	actions.push({ type: 'clear' });
 	updateActionButtons();
 	playSound('reaction');
 	brush.hue = 0;
 	render();
 }
 
-clearButton.addEventListener('click', clearCanvas);
-
-// ---------- Export ----------
-
 function exportPNG() {
-	if (canvasIsEmpty()) return; // nothing to save
+	if (canvasIsEmpty()) return;
 	playSound('select');
-	// The canvas is transparent; flatten it onto white so the PNG looks like what's on screen
+
+	// Flatten canvas onto white background
 	const out = document.createElement('canvas');
 	out.width = canvas.width;
 	out.height = canvas.height;
@@ -304,15 +325,10 @@ function exportPNG() {
 	}, 'image/png');
 }
 
-exportButton.addEventListener('click', exportPNG);
-
-// ---------- Dock ----------
-
-const colorButtons = document.querySelectorAll('[data-color]');
-const sizeButtons = document.querySelectorAll('[data-size]');
+// Brush controls
 
 function setColor(color) {
-	if (brush.color === color) return; // no sound or work when it's already selected
+	if (brush.color === color) return;
 	brush.color = color;
 	playSound('select');
 	colorButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === color)));
@@ -327,70 +343,45 @@ function setSize(size) {
 	applyBrush();
 }
 
-document.querySelector('[data-color="ink"]').addEventListener('click', () => setColor('ink'));
-sizeButtons.forEach((b) => b.addEventListener('click', () => setSize(b.dataset.size)));
+// Color popover
 
-// ---------- Color popover ----------
-// The first dock swatch is a "slot" that holds one palette color (Rainbow by default).
-// Clicking it selects that color and opens the popover; key 1 selects it without opening
+function buildPalette() {
+	paletteItems = PALETTE.map((c) => {
+		const b = document.createElement('button');
+		b.type = 'button';
+		b.className = 'palette-item';
+		b.dataset.paletteColor = c.id;
+		b.setAttribute('aria-label', c.name);
 
-const slot = document.querySelector('#color-slot');
-const slotWrap = slot.parentElement;
-const slotSwatch = slot.querySelector('.swatch');
-const slotTipLabel = slot.querySelector('.tip-label');
-const palette = document.querySelector('#palette');
+		const swatch = document.createElement('span');
+		swatch.className = c.hex ? 'swatch' : 'swatch swatch--rainbow';
+		if (c.hex) {
+			swatch.style.background = c.hex;
+			swatch.style.setProperty('--ring', c.hex);
+		}
+		b.append(swatch);
 
-// Build the popover's swatches from PALETTE.
-const paletteItems = PALETTE.map((c) => {
-	const b = document.createElement('button');
-	b.type = 'button';
-	b.className = 'palette-item';
-	b.dataset.paletteColor = c.id;
-	b.setAttribute('aria-label', c.name);
-	b.setAttribute('aria-pressed', String(c.id === brush.paletteColor));
-	b.tabIndex = c.id === brush.paletteColor ? 0 : -1; // arrow keys move within the grid
-	const sw = document.createElement('span');
-	sw.className = c.id === 'rainbow' ? 'swatch swatch--rainbow' : 'swatch';
-	if (c.hex) sw.style.background = c.hex;
-	b.append(sw);
-	// e.detail is 0 when the click came from Enter/Space rather than a mouse or tap
-	b.addEventListener('click', (e) => pickPaletteColor(c.id, { fromKeyboard: e.detail === 0 }));
-	b.addEventListener('pointerenter', hoverSound('hover'));
-	palette.append(b);
-	return b;
-});
-
-// Hover sounds: popover colors play 'hover', toolbar buttons play 'typing'. Mouse/trackpad
-// only — on touch screens a tap also counts as a hover, which would play it on top of the click sound
-
-let lastHover = 0;
-function hoverSound(name) {
-	return (e) => {
-		if (e.pointerType === 'touch') return;
-		if (e.currentTarget.getAttribute('aria-disabled') === 'true') return;
-		const now = performance.now();
-		if (now - lastHover < 40) return;
-		lastHover = now;
-		playSound(name);
-	};
+		// detail is 0 when Enter/Space triggered the click.
+		b.addEventListener('click', (e) => pickPaletteColor(c.id, { fromKeyboard: e.detail === 0 }));
+		b.addEventListener('pointerenter', hoverSound('hover'));
+		palette.append(b);
+		return b;
+	});
 }
-
-// Show the slot's current color on its swatch, tooltip and label.
-const RAINBOW_RING = 'conic-gradient(from 90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30)';
 
 function updateSlot() {
 	const c = paletteEntry(brush.paletteColor);
-	slotSwatch.classList.toggle('swatch--rainbow', c.id === 'rainbow');
+	slotSwatch.classList.toggle('swatch--rainbow', !c.hex);
 	slotSwatch.style.background = c.hex || '';
-	// selection ring matches the color (see #color-slot .swatch::before in styles.css)
-	slot.style.setProperty('--ring', c.hex || RAINBOW_RING);
+	if (c.hex) slot.style.setProperty('--ring', c.hex);
+	else slot.style.removeProperty('--ring');
 	slotTipLabel.textContent = c.name;
 	slot.setAttribute('aria-label', `Color: ${c.name}`);
-	paletteItems.forEach((b) => {
-		const on = b.dataset.paletteColor === c.id;
-		b.setAttribute('aria-pressed', String(on));
-		b.tabIndex = on ? 0 : -1;
-	});
+	for (const b of paletteItems) {
+		const selected = b.dataset.paletteColor === c.id;
+		b.setAttribute('aria-pressed', String(selected));
+		b.tabIndex = selected ? 0 : -1;
+	}
 }
 
 function pickPaletteColor(id, { fromKeyboard = false } = {}) {
@@ -401,7 +392,6 @@ function pickPaletteColor(id, { fromKeyboard = false } = {}) {
 	colorButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === 'palette')));
 	updateSlot();
 	applyBrush();
-	// Only hand focus back to the slot for keyboard users; after a click it would show a stray focus ring
 	closePalette({ returnFocus: fromKeyboard });
 }
 
@@ -409,74 +399,61 @@ const isPaletteOpen = () => !palette.hidden;
 
 function openPalette() {
 	palette.hidden = false;
-	slotWrap.classList.add('is-open');
+	picker.classList.add('is-open');
 	slot.setAttribute('aria-expanded', 'true');
-	// Keep it on-screen on narrow phones (it's centered on the swatch, which sits near the dock's edge).
-	// Measured from the swatch and the popover's layout width, since the open animation scales it
+
 	const s = slot.getBoundingClientRect();
 	const w = palette.offsetWidth;
 	const left = s.left + s.width / 2 - w / 2;
-	const margin = 8;
+	const maxRight = window.innerWidth - POPOVER_EDGE_MARGIN;
 	let shift = 0;
-	if (left < margin) shift = margin - left;
-	else if (left + w > window.innerWidth - margin) shift = window.innerWidth - margin - (left + w);
+	if (left < POPOVER_EDGE_MARGIN) shift = POPOVER_EDGE_MARGIN - left;
+	else if (left + w > maxRight) shift = maxRight - (left + w);
 	palette.style.setProperty('--shift', `${shift}px`);
+
 	paletteItems.find((b) => b.tabIndex === 0).focus({ preventScroll: true });
 }
 
 function closePalette({ returnFocus = false } = {}) {
 	if (!isPaletteOpen()) return;
 	palette.hidden = true;
-	slotWrap.classList.remove('is-open');
+	picker.classList.remove('is-open');
 	slot.setAttribute('aria-expanded', 'false');
 	if (returnFocus) slot.focus({ preventScroll: true });
 }
 
-slot.addEventListener('click', () => {
+function toggleSlot() {
 	if (isPaletteOpen()) return closePalette();
 	setColor('palette');
 	openPalette();
-});
+}
 
-// Arrow keys move through the 4-wide grid; Esc closes
-const COLS = 4;
-palette.addEventListener('keydown', (e) => {
+function navigatePalette(e) {
 	const i = paletteItems.indexOf(document.activeElement);
 	if (i === -1) return;
-	const moves = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: COLS, ArrowUp: -COLS };
+	const steps = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: PALETTE_COLUMNS, ArrowUp: -PALETTE_COLUMNS };
 	let next = null;
-	if (e.key in moves) next = i + moves[e.key];
+	if (e.key in steps) next = i + steps[e.key];
 	else if (e.key === 'Home') next = 0;
 	else if (e.key === 'End') next = paletteItems.length - 1;
 	if (next === null) return;
 	e.preventDefault();
 	e.stopPropagation();
 	paletteItems[Math.max(0, Math.min(paletteItems.length - 1, next))].focus();
-});
+}
 
-// Clicking or tapping anywhere else closes it. A tap on the canvas only closes it
-document.addEventListener('pointerdown', (e) => {
-	if (!isPaletteOpen() || slotWrap.contains(e.target)) return;
+function closePaletteOnOutsidePress(e) {
+	if (!isPaletteOpen() || picker.contains(e.target)) return;
 	closePalette();
+	// Dismissing the popover by tapping the canvas shouldn't also draw
 	if (e.target === canvas) e.stopPropagation();
-}, { capture: true });
+}
 
-// Tabbing out of the popover closes it too
-slotWrap.addEventListener('focusout', (e) => {
-	if (isPaletteOpen() && e.relatedTarget && !slotWrap.contains(e.relatedTarget)) closePalette();
-});
-
-// Clicking a dock button with the mouse shouldn't leave a focus ring or keep its tooltip pinned
-document.querySelectorAll('.dock-item').forEach((b) => {
-	b.addEventListener('pointerup', (e) => { if (e.pointerType !== 'keyboard') b.blur(); });
-	b.addEventListener('pointerenter', hoverSound('typing'));
-});
-
-// ---------- Keyboard shortcuts ----------
+// Keyboard shortcuts
 
 const SHORTCUTS = {
-	'1': () => setColor('palette'), // whatever color the slot holds
-	'2': () => setColor('ink'),
+	1: () => setColor('palette'),
+	2: () => setColor('ink'),
 	s: () => setSize('small'),
 	m: () => setSize('medium'),
 	l: () => setSize('large'),
@@ -485,41 +462,77 @@ const SHORTCUTS = {
 	e: exportPNG,
 };
 
-window.addEventListener('keydown', (e) => {
+function onKeydown(e) {
 	const t = e.target;
 	if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-	// ⌘Z / Ctrl+Z also undo, since that's muscle memory
+
 	if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
 		e.preventDefault();
 		undo();
 		return;
 	}
 	if (e.key === 'Escape' && isPaletteOpen()) {
-		closePalette({ returnFocus: slotWrap.contains(document.activeElement) });
+		closePalette({ returnFocus: picker.contains(document.activeElement) });
 		return;
 	}
-	// Leave every other ⌘/Ctrl/Alt combo (⌘S, ⌘L, ⌘M…) to the browser and OS
 	if (e.metaKey || e.ctrlKey || e.altKey) return;
+
 	const action = SHORTCUTS[e.key.toLowerCase()];
 	if (action) {
 		e.preventDefault();
 		action();
 	}
+}
+
+// Setup
+
+loadSounds();
+buildPalette();
+
+// iOS Safari only lets audio start on a completed tap, not on touchstart/pointerdown.
+for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
+	window.addEventListener(type, unlockAudio, { capture: true, passive: true });
+}
+
+canvas.addEventListener('pointerdown', startStroke);
+canvas.addEventListener('pointermove', continueStroke);
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', endStroke);
+canvas.addEventListener('lostpointercapture', endStroke);
+window.addEventListener('resize', onResize);
+
+slot.addEventListener('click', toggleSlot);
+inkButton.addEventListener('click', () => setColor('ink'));
+sizeButtons.forEach((b) => b.addEventListener('click', () => setSize(b.dataset.size)));
+undoButton.addEventListener('click', undo);
+clearButton.addEventListener('click', clearCanvas);
+exportButton.addEventListener('click', exportPNG);
+
+document.querySelectorAll('.dock-item').forEach((b) => {
+	// Don't leave a focus ring or a pinned tooltip after a mouse click.
+	b.addEventListener('pointerup', () => b.blur());
+	b.addEventListener('pointerenter', hoverSound('typing'));
 });
 
-// ---------- No zooming ----------
-// The CSS (touch-action: none) and viewport tag handle Chrome/Android, but iPhone Safari
-// still allows pinch-zoom, so cancel its pinch gestures and any two-finger touch moves
+palette.addEventListener('keydown', navigatePalette);
+document.addEventListener('pointerdown', closePaletteOnOutsidePress, { capture: true });
+picker.addEventListener('focusout', (e) => {
+	if (isPaletteOpen() && e.relatedTarget && !picker.contains(e.relatedTarget)) closePalette();
+});
 
+window.addEventListener('keydown', onKeydown);
+
+// touch-action: none covers Chrome; iOS Safari still pinch-zooms without these.
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
 	document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 }
+document.addEventListener(
+	'touchmove',
+	(e) => {
+		if (e.touches.length > 1) e.preventDefault();
+	},
+	{ passive: false },
+);
 
-document.addEventListener('touchmove', (e) => {
-	if (e.touches.length > 1) e.preventDefault();
-}, { passive: false });
-
-// ---------- Init ----------
-
-updateSlot(); // so the slot (and its ring) shows the starting color
+updateSlot();
 sizeCanvas();

@@ -38,12 +38,12 @@
 	<canvas id="skrblz" aria-label="Drawing canvas"></canvas>
 	
 	<div class="dock" role="toolbar" aria-label="Drawing tools">
-		<div class="color-slot">
-			<button type="button" class="dock-item" id="color-slot" data-color="palette" aria-label="Color: Rainbow" aria-keyshortcuts="1" aria-pressed="true" aria-haspopup="true" aria-expanded="false" aria-controls="palette">
+		<div class="color-picker">
+			<button type="button" class="dock-item" id="color-slot" data-color="palette" aria-label="Color: Rainbow" aria-keyshortcuts="1" aria-pressed="true" aria-haspopup="dialog" aria-expanded="false" aria-controls="palette">
 				<span class="swatch swatch--rainbow"></span>
 				<span class="tip" aria-hidden="true"><span class="tip-label">Rainbow</span> <kbd>1</kbd></span>
 			</button>
-			<div class="palette" id="palette" role="group" aria-label="Colors" hidden></div>
+			<div class="palette" id="palette" role="dialog" aria-label="Colors" hidden></div>
 		</div>
 		<button type="button" class="dock-item" data-color="ink" aria-label="Black" aria-keyshortcuts="2" aria-pressed="false">
 			<span class="swatch swatch--ink"></span>
@@ -52,15 +52,15 @@
 		
 		<span class="dock-divider" aria-hidden="true"></span>
 		
-		<button type="button" class="dock-item dock-item--size" data-size="small" aria-label="Small" aria-keyshortcuts="S" aria-pressed="false">
+		<button type="button" class="dock-item" data-size="small" aria-label="Small" aria-keyshortcuts="S" aria-pressed="false">
 			<span class="size size--small"></span>
 			<span class="tip" aria-hidden="true">Small <kbd>s</kbd></span>
 		</button>
-		<button type="button" class="dock-item dock-item--size" data-size="medium" aria-label="Medium" aria-keyshortcuts="M" aria-pressed="true">
+		<button type="button" class="dock-item" data-size="medium" aria-label="Medium" aria-keyshortcuts="M" aria-pressed="true">
 			<span class="size size--medium"></span>
 			<span class="tip" aria-hidden="true">Medium <kbd>m</kbd></span>
 		</button>
-		<button type="button" class="dock-item dock-item--size" data-size="large" aria-label="Large" aria-keyshortcuts="L" aria-pressed="false">
+		<button type="button" class="dock-item" data-size="large" aria-label="Large" aria-keyshortcuts="L" aria-pressed="false">
 			<span class="size size--large"></span>
 			<span class="tip" aria-hidden="true">Large <kbd>l</kbd></span>
 		</button>
