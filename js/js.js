@@ -156,6 +156,10 @@ function visibleStart() {
 
 function render() {
 	wipe();
+	// Resizing the canvas resets its drawing settings to the defaults (flat line ends, sharp
+	// corners), so set the round ends and joins again before replaying the strokes
+	ctx.lineJoin = 'round';
+	ctx.lineCap = 'round';
 	for (let i = visibleStart(); i < actions.length; i++) {
 		const action = actions[i];
 		if (action.type !== 'stroke') continue;
