@@ -51,6 +51,11 @@ const slotSwatch = slot.querySelector('.swatch');
 const slotTipLabel = slot.querySelector('.tip-label');
 const palette = document.querySelector('#palette');
 
+const about = document.querySelector('#about');
+const aboutOpenButton = document.querySelector('#about-open');
+const aboutCloseButton = document.querySelector('#about-close');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
 // State
 
 const brush = {
@@ -449,6 +454,23 @@ function closePaletteOnOutsidePress(e) {
 	if (e.target === canvas) e.stopPropagation();
 }
 
+// About modal
+
+function openAbout() {
+	about.classList.remove('is-closing');
+	about.showModal();
+}
+
+function closeAbout() {
+	if (!about.open || about.classList.contains('is-closing')) return;
+	if (reducedMotion.matches) return about.close();
+	about.classList.add('is-closing');
+	about.addEventListener('animationend', () => {
+		about.classList.remove('is-closing');
+		about.close();
+	}, { once: true });
+}
+
 // Keyboard shortcuts
 
 const SHORTCUTS = {
@@ -463,6 +485,7 @@ const SHORTCUTS = {
 };
 
 function onKeydown(e) {
+	if (about.open) return;
 	const t = e.target;
 	if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
 
@@ -521,6 +544,17 @@ picker.addEventListener('focusout', (e) => {
 });
 
 window.addEventListener('keydown', onKeydown);
+
+aboutOpenButton.addEventListener('click', openAbout);
+aboutCloseButton.addEventListener('click', closeAbout);
+about.addEventListener('click', (e) => {
+	if (e.target === about) closeAbout();
+});
+// Esc: animate out instead of closing instantly.
+about.addEventListener('cancel', (e) => {
+	e.preventDefault();
+	closeAbout();
+});
 
 // touch-action: none covers Chrome; iOS Safari still pinch-zooms without these.
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {

@@ -10,6 +10,8 @@
 	
 	<title>Skrblz</title>
 	
+	<link rel="preload" href="fonts/aileron/Aileron-Regular.otf" as="font" type="font/otf" crossorigin>
+	<link rel="preload" href="fonts/aileron/Aileron-Bold.otf" as="font" type="font/otf" crossorigin>
 	<link rel="stylesheet" href="css/reset.css">
 	<link rel="stylesheet" href="css/styles.css">
 	<link rel="icon" href="img/favicon.png">
@@ -31,8 +33,10 @@
 					</g>
 				</g>
 			</svg>
-			<div id="beta">BETA</div>
 		</div>
+		<button type="button" class="about-button" id="about-open" aria-label="About Skrblz" aria-haspopup="dialog" aria-controls="about">
+			<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+		</button>
 	</section>
 	
 	<canvas id="skrblz" aria-label="Drawing canvas"></canvas>
@@ -81,15 +85,27 @@
 		</button>
 	</div>
 	
-	<div id="made-by">
-		<div id="left" class="avatar-frame">
-			<img src="img/chris.png" id="avatar" width="32" height="32" alt="" onerror="this.style.visibility='hidden'"/>
+	<dialog class="about" id="about" aria-labelledby="about-title">
+		<div class="about-body">
+			<button type="button" class="about-close" id="about-close" aria-label="Close">
+				<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+			</button>
+			<img class="about-icon" src="img/Favicon@2x.png" width="48" height="48" alt="">
+			<h2 id="about-title">Hey! Thanks for using Skrblz.</h2>
+			<p>Skrblz is intentionally minimalist in both features and design. If you have feedback or ideas for improvement, please let me know by emailing me: <a href="mailto:hi@chriscastillo.cool">hi@chriscastillo.cool</a></p>
+			<hr>
+			<p>This site uses:</p>
+			<ul class="credits">
+				<li><a href="https://uisfx.com" target="_blank" rel="noopener noreferrer">ui sfx</a></li>
+				<li><a href="http://www.dotcolon.net" target="_blank" rel="noopener noreferrer">Aileron</a></li>
+				<li><a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a></li>
+			</ul>
+			<div class="made-by">
+				<img class="avatar" src="img/chris.png" width="40" height="40" alt="" loading="lazy">
+				<p>Made by<br><a href="https://chriscastillo.cool" target="_blank" rel="noopener noreferrer">Chris</a></p>
+			</div>
 		</div>
-		<div id="right">
-			<h6 class="small">made by</h6>
-			<h5 class="small"><a href="https://chriscastillo.cool" target="_blank" rel="noopener noreferrer">Chris</a></h5>
-		</div>
-	</div>
+	</dialog>
 	
 	<script src="js/js.js"></script>
 </body>
