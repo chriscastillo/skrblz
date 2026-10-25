@@ -488,24 +488,26 @@ body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 .credits {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 14px;
+	gap: 12px;
+	margin-top: 12px;
 	padding: 0;
 	list-style: none;
 }
 
 .credits a {
-	display: block;
-	padding: 8px 10px;
-	border-radius: 12px;
-	background: #e4e4ec;
-	color: #353538;
-	line-height: 1.4;
-	text-decoration: none;
-	transition: background-color 120ms ease-out;
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-size: 14px;
+	color: var(--chrome-dark);
 }
 
-.credits a:hover { background: #d6d6df; }
+.credits .icon {
+	color: var(--chip);
+	transition: color 120ms ease-out;
+}
+
+.credits a:hover .icon { color: var(--chrome-dark); }
 
 .made-by {
 	display: flex;
@@ -524,7 +526,7 @@ body.is-drawing .tip { opacity: 0 !important; transition-delay: 0s !important; }
 
 .made-by p {
 	margin: 0;
-	font-size: 15px;
+	font-size: 14px;
 	line-height: 1.2;
 	color: #9a9aa0;
 }
