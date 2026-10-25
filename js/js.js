@@ -42,7 +42,7 @@ function strokeColor() {
 	return paletteEntry(brush.paletteColor).hex;
 }
 
-// Context settings are reset whenever the canvas is resized, so they live in one place.
+// Context settings are reset whenever the canvas is resized, so they live in one place
 function applyBrush() {
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
@@ -86,8 +86,7 @@ function unlockAudio() {
 	// ("interrupted") when you switch apps or get a call
 	if (audio.state !== 'running') {
 		audio.resume().catch(() => {});
-		// older iOS Safari only unlocks audio after something actually plays during a tap,
-		// so play a single silent sample
+		// older iOS Safari only unlocks audio after something actually plays during a tap
 		const blip = audio.createBufferSource();
 		blip.buffer = audio.createBuffer(1, 1, 22050);
 		blip.connect(audio.destination);
