@@ -53,7 +53,7 @@ function applyBrush() {
 // ---------- Sounds ----------
 // UI sounds from uisfx.com ("zen" feel, CC0). Volumes are the library's own per-sound defaults.
 // Browsers only allow audio after the person interacts with the page, so the AudioContext is
-// created on the first pointer or key press
+// created and unlocked on the first tap, click or key press
 
 const SOUNDS = {
 	select:   { src: 'sounds/select.mp3',   volume: 0.2 }, // colors, sizes, export
@@ -72,19 +72,34 @@ for (const [name, { src }] of Object.entries(SOUNDS)) {
 }
 
 function unlockAudio() {
-	if (audio) return;
-	const AudioCtx = window.AudioContext || window.webkitAudioContext;
-	if (!AudioCtx) return;
-	audio = new AudioCtx();
-	for (const name of Object.keys(SOUNDS)) {
-		soundBuffers[name] = soundData[name]
-			.then((data) => (data ? audio.decodeAudioData(data.slice(0)) : null))
-			.catch(() => null);
+	if (!audio) {
+		const AudioCtx = window.AudioContext || window.webkitAudioContext;
+		if (!AudioCtx) return;
+		audio = new AudioCtx();
+		for (const name of Object.keys(SOUNDS)) {
+			soundBuffers[name] = soundData[name]
+				.then((data) => (data ? audio.decodeAudioData(data.slice(0)) : null))
+				.catch(() => null);
+		}
+	}
+	// Wake it up if it's not running yet — or again, after iOS pauses it
+	// ("interrupted") when you switch apps or get a call
+	if (audio.state !== 'running') {
+		audio.resume().catch(() => {});
+		// older iOS Safari only unlocks audio after something actually plays during a tap,
+		// so play a single silent sample
+		const blip = audio.createBufferSource();
+		blip.buffer = audio.createBuffer(1, 1, 22050);
+		blip.connect(audio.destination);
+		blip.start();
 	}
 }
 
-window.addEventListener('pointerdown', unlockAudio, { capture: true });
-window.addEventListener('keydown', unlockAudio, { capture: true });
+// Safari on iPhone/iPad only allows audio to start on a finished tap (touchend/click),
+// not when the finger first touches down, so listen for all of them
+for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
+	window.addEventListener(type, unlockAudio, { capture: true, passive: true });
+}
 
 // Fallback for when Web Audio can't load the files — e.g. index.html opened straight from
 // Finder (a file:// URL), where browsers block fetch(). An <audio> element still works there
@@ -101,7 +116,7 @@ function playFallback(name) {
 async function playSound(name) {
 	unlockAudio();
 	if (!audio) return playFallback(name);
-	if (audio.state === 'suspended') audio.resume();
+	if (audio.state !== 'running') audio.resume().catch(() => {});
 	const buffer = await soundBuffers[name];
 	if (!buffer) return playFallback(name);
 	const source = audio.createBufferSource();
@@ -488,6 +503,18 @@ window.addEventListener('keydown', (e) => {
 		action();
 	}
 });
+
+// ---------- No zooming ----------
+// The CSS (touch-action: none) and viewport tag handle Chrome/Android, but iPhone Safari
+// still allows pinch-zoom, so cancel its pinch gestures and any two-finger touch moves.
+
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+	document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+}
+
+document.addEventListener('touchmove', (e) => {
+	if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 
 // ---------- Init ----------
 

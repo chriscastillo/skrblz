@@ -11,6 +11,8 @@
 
 html, body {
 	height: 100%;
+	/* no pinch-zoom, double-tap zoom or scrolling anywhere — this is a drawing surface */
+	touch-action: none;
 }
 
 body {
