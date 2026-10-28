@@ -5,16 +5,17 @@
 const INK = '#1f1f1d';
 
 const SIZES = { small: 6, medium: 14, large: 28 };
+const ERASER_SCALE = 2;
 
 const PALETTE = [
 	{ id: 'pink', name: 'Pink', hex: '#FE60B8' },
 	{ id: 'green', name: 'Green', hex: '#4CC342' },
 	{ id: 'sky', name: 'Sky', hex: '#7ECDF0' },
-	{ id: 'crimson', name: 'Crimson', hex: '#B91A45' },
+	{ id: 'gray', name: 'Gray', hex: '#8E8E93' },
 	{ id: 'purple', name: 'Purple', hex: '#672E91' },
 	{ id: 'blue', name: 'Blue', hex: '#1E71EA' },
 	{ id: 'orange', name: 'Orange', hex: '#FF743E' },
-	{ id: 'forest', name: 'Forest', hex: '#177525' },
+	{ id: 'black', name: 'Black', hex: INK },
 	{ id: 'yellow', name: 'Yellow', hex: '#F3DC3D' },
 	{ id: 'red', name: 'Red', hex: '#ED3546' },
 	{ id: 'lavender', name: 'Lavender', hex: '#C566FF' },
@@ -40,7 +41,7 @@ const ctx = canvas.getContext('2d');
 
 const colorButtons = document.querySelectorAll('[data-color]');
 const sizeButtons = document.querySelectorAll('[data-size]');
-const inkButton = document.querySelector('[data-color="ink"]');
+const eraserButton = document.querySelector('#eraser');
 const undoButton = document.querySelector('#undo');
 const clearButton = document.querySelector('#clear');
 const exportButton = document.querySelector('#export');
@@ -59,7 +60,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 // State
 
 const brush = {
-	color: 'palette', // 'palette' (whatever the color slot holds)
+	color: 'palette', // 'palette' (whatever the color slot holds) or 'eraser'
 	paletteColor: 'rainbow',
 	size: 'medium',
 	hue: 0,
@@ -107,7 +108,7 @@ function unlockAudio() {
 	}
 	if (audio.state !== 'running') {
 		audio.resume().catch((err) => console.warn('Audio resume failed', err));
-		// Older iOS Safari only unlocks Web Audio once something plays during a tap.
+		// Older iOS Safari only unlocks Web Audio once something plays during a tap
 		const silence = audio.createBufferSource();
 		silence.buffer = audio.createBuffer(1, 1, audio.sampleRate);
 		silence.connect(audio.destination);
@@ -139,7 +140,7 @@ async function playSound(name) {
 
 function hoverSound(name) {
 	return (e) => {
-		// On touch screens a tap also fires pointerenter.
+		// On touch screens a tap also fires pointerenter
 		if (e.pointerType === 'touch') return;
 		if (e.currentTarget.getAttribute('aria-disabled') === 'true') return;
 		const now = performance.now();
@@ -153,8 +154,11 @@ function hoverSound(name) {
 
 const paletteEntry = (id) => PALETTE.find((c) => c.id === id);
 
+const isErasing = () => brush.color === 'eraser';
+const brushWidth = () => SIZES[brush.size] * (isErasing() ? ERASER_SCALE : 1);
+
 function strokeColor() {
-	if (brush.color === 'ink') return INK;
+	if (isErasing()) return '#000';
 	if (brush.paletteColor === 'rainbow') return `hsl(${brush.hue}, 100%, 50%)`;
 	return paletteEntry(brush.paletteColor).hex;
 }
@@ -162,9 +166,23 @@ function strokeColor() {
 function applyBrush() {
 	ctx.lineJoin = 'round';
 	ctx.lineCap = 'round';
-	ctx.lineWidth = SIZES[brush.size];
+	ctx.lineWidth = brushWidth();
 	ctx.strokeStyle = strokeColor();
+	updateCursor();
 }
+
+// A circle the size of the eraser, so you can see what it'll remove
+function updateCursor() {
+	if (!isErasing()) return canvas.style.removeProperty('cursor');
+	const d = brushWidth() + 2;
+	const r = d / 2;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${d}" height="${d}"><circle cx="${r}" cy="${r}" r="${r - 1}" fill="rgba(255,255,255,0.6)" stroke="#8E8E93"/></svg>`;
+	canvas.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${r} ${r}, crosshair`;
+}
+
+const setErasing = (erase) => {
+	ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+};
 
 function drawSegment(x0, y0, x1, y1, color) {
 	ctx.strokeStyle = color;
@@ -183,13 +201,17 @@ function drawDot({ x, y, c }, width) {
 
 const isDot = (points) => points.every((p) => p.x === points[0].x && p.y === points[0].y);
 
-function drawStroke({ points, width }) {
+function drawStroke({ points, width, erase }) {
 	ctx.lineWidth = width;
-	if (isDot(points)) return drawDot(points[0], width);
-	points.forEach((p, i) => {
-		const from = points[i - 1] || p;
-		drawSegment(from.x, from.y, p.x, p.y, p.c);
-	});
+	setErasing(erase);
+	if (isDot(points)) drawDot(points[0], width);
+	else {
+		points.forEach((p, i) => {
+			const from = points[i - 1] || p;
+			drawSegment(from.x, from.y, p.x, p.y, p.c);
+		});
+	}
+	setErasing(false);
 }
 
 function clearPixels() {
@@ -252,7 +274,9 @@ function startStroke(e) {
 	drawing = true;
 	document.body.classList.add('is-drawing');
 	canvas.setPointerCapture(e.pointerId);
-	currentStroke = { type: 'stroke', width: SIZES[brush.size], points: [] };
+	currentStroke = { type: 'stroke', width: brushWidth(), erase: isErasing(), points: [] };
+	ctx.lineWidth = currentStroke.width;
+	setErasing(currentStroke.erase);
 	actions.push(currentStroke);
 	updateActionButtons();
 	addPoint(e.clientX, e.clientY);
@@ -271,6 +295,7 @@ function continueStroke(e) {
 
 function endStroke() {
 	if (currentStroke && isDot(currentStroke.points)) drawDot(currentStroke.points[0], currentStroke.width);
+	setErasing(false);
 	drawing = false;
 	currentStroke = null;
 	document.body.classList.remove('is-drawing');
@@ -366,7 +391,6 @@ function buildPalette() {
 		}
 		b.append(swatch);
 
-		// detail is 0 when Enter/Space triggered the click.
 		b.addEventListener('click', (e) => pickPaletteColor(c.id, { fromKeyboard: e.detail === 0 }));
 		b.addEventListener('pointerenter', hoverSound('hover'));
 		palette.append(b);
@@ -475,7 +499,7 @@ function closeAbout() {
 
 const SHORTCUTS = {
 	1: () => setColor('palette'),
-	2: () => setColor('ink'),
+	2: () => setColor('eraser'),
 	s: () => setSize('small'),
 	m: () => setSize('medium'),
 	l: () => setSize('large'),
@@ -512,7 +536,7 @@ function onKeydown(e) {
 loadSounds();
 buildPalette();
 
-// iOS Safari only lets audio start on a completed tap, not on touchstart/pointerdown.
+// iOS Safari only lets audio start on a completed tap, not on touchstart/pointerdown
 for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) {
 	window.addEventListener(type, unlockAudio, { capture: true, passive: true });
 }
@@ -525,14 +549,14 @@ canvas.addEventListener('lostpointercapture', endStroke);
 window.addEventListener('resize', onResize);
 
 slot.addEventListener('click', toggleSlot);
-inkButton.addEventListener('click', () => setColor('ink'));
+eraserButton.addEventListener('click', () => setColor('eraser'));
 sizeButtons.forEach((b) => b.addEventListener('click', () => setSize(b.dataset.size)));
 undoButton.addEventListener('click', undo);
 clearButton.addEventListener('click', clearCanvas);
 exportButton.addEventListener('click', exportPNG);
 
 document.querySelectorAll('.dock-item').forEach((b) => {
-	// Don't leave a focus ring or a pinned tooltip after a mouse click.
+	// Don't leave a focus ring or a pinned tooltip after a mouse click
 	b.addEventListener('pointerup', () => b.blur());
 	b.addEventListener('pointerenter', hoverSound('typing'));
 });
@@ -556,7 +580,7 @@ about.addEventListener('cancel', (e) => {
 	closeAbout();
 });
 
-// touch-action: none covers Chrome; iOS Safari still pinch-zooms without these.
+// touch-action: none covers Chrome; iOS Safari still pinch-zooms without these
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
 	document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 }

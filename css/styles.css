@@ -151,7 +151,7 @@ body {
 	place-items: center;
 	flex-shrink: 0;
 	height: 36px;
-	padding: 0 calc(var(--gap) / 2);
+	padding: 0 calc(var(--gap) / 2 - var(--inset, 0px));
 	border: 0;
 	border-radius: 12px;
 	background: none;
@@ -172,10 +172,10 @@ body {
 	background: var(--divider);
 }
 
-.dock-item[data-size="small"] { margin-left: calc(var(--gap) / -8); }
-.dock-item[data-size="large"] { margin-right: calc(var(--gap) * 3 / 16); }
-
-.dock-item--icon + .dock-item--icon { margin-left: 4px; }
+#eraser { --inset: 6.83px; }
+#undo { --inset: 2.5px; }
+#clear { --inset: 0.83px; }
+#export { --inset: 1.67px; }
 
 @media screen and (max-width: 420px) {
 	.dock { --gap: 16px; }
@@ -195,8 +195,6 @@ body {
 	transition: transform 120ms ease-out, box-shadow 120ms ease-out;
 }
 
-.swatch--ink { background: var(--ink); }
-
 .swatch--rainbow {
 	--ring: var(--rainbow);
 	background:
@@ -210,7 +208,6 @@ body {
 .dock-item[aria-pressed="true"] > .swatch,
 .palette-item[aria-pressed="true"] > .swatch { transform: none; }
 
-[aria-pressed="true"] > .swatch--ink,
 [aria-pressed="true"] > .size {
 	box-shadow: 0 0 0 3px var(--dock-bg), 0 0 0 5.5px var(--ink);
 }
@@ -245,6 +242,21 @@ body {
 .dock-item:hover > .size { background: var(--chip-hover); }
 .dock-item[aria-pressed="true"] > .size { background: var(--ink); }
 
+/* Eraser */
+
+.tool {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	color: #48484a;
+	transition: color 120ms ease-out, background-color 120ms ease-out;
+}
+
+.dock-item:hover > .tool { color: var(--ink); }
+.dock-item[aria-pressed="true"] > .tool { background: var(--ink); color: #fff; }
+
 /* Undo, clear, export */
 
 .dock-item--icon {
@@ -278,7 +290,6 @@ body {
 	left: 50%;
 	/* measured from the dock's edge, not the swatch's: + dock padding + border */
 	bottom: calc(100% + var(--popover-gap) + var(--dock-pad) + 1px);
-	/* --shift keeps it on-screen; set in js.js */
 	transform: translateX(calc(-50% + var(--shift, 0px)));
 	transform-origin: 50% 100%;
 	display: grid;
